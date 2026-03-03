@@ -1,6 +1,5 @@
 package com.example.ankyudh.ui.components
 
-const val DEFAULT_PADDING = 44
 
 import androidx.compose.animation.core.Easing
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,3 +17,5 @@ operator fun PaddingValues.times(value: Float): PaddingValues = PaddingValues(
     start = calculateStartPadding(LayoutDirection.Ltr) * value,
     end = calculateEndPadding(LayoutDirection.Ltr) * value
 )
+
+const val DEFAULT_PADDING = 44

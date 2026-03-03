@@ -20,18 +20,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.FloatingActionButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,7 +78,7 @@ private fun getRenderEffect(): RenderEffect {
 }
 
 @Composable
-fun FluidBottomNavigation() {
+fun FluidBottomNavigation(onNavigationSelected: (String) -> Unit = {}) {
     val isMenuExtended = remember { mutableStateOf(false) }
 
     val fabAnimationProgress by animateFloatAsState(
@@ -106,10 +106,10 @@ fun FluidBottomNavigation() {
     FluidBottomNavigation(
         renderEffect = renderEffect,
         fabAnimationProgress = fabAnimationProgress,
-        clickAnimationProgress = clickAnimationProgress
-    ) {
-        isMenuExtended.value = isMenuExtended.value.not()
-    }
+        clickAnimationProgress = clickAnimationProgress,
+        toggleAnimation = { isMenuExtended.value = isMenuExtended.value.not() },
+        onNavigationSelected = onNavigationSelected
+    )
 }
 
 @Composable
@@ -117,7 +117,8 @@ fun FluidBottomNavigation(
     renderEffect: androidx.compose.ui.graphics.RenderEffect?,
     fabAnimationProgress: Float = 0f,
     clickAnimationProgress: Float = 0f,
-    toggleAnimation: () -> Unit = { }
+    toggleAnimation: () -> Unit = { },
+    onNavigationSelected: (String) -> Unit = {}
 ) {
     Box(
         Modifier
@@ -125,17 +126,18 @@ fun FluidBottomNavigation(
             .padding(bottom = 24.dp),
         contentAlignment = Alignment.BottomCenter
     ) {
-        CustomBottomNavigation()
+        CustomBottomNavigation(onNavigationSelected)
         Circle(
-            color = MaterialTheme.colors.primary.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
             animationProgress = 0.5f
         )
 
-        FabGroup(renderEffect = renderEffect, animationProgress = fabAnimationProgress)
+        FabGroup(renderEffect = renderEffect, animationProgress = fabAnimationProgress, onNavigationSelected = onNavigationSelected)
         FabGroup(
             renderEffect = null,
             animationProgress = fabAnimationProgress,
-            toggleAnimation = toggleAnimation
+            toggleAnimation = toggleAnimation,
+            onNavigationSelected = onNavigationSelected
         )
         Circle(
             color = Color.White,
@@ -162,7 +164,7 @@ fun Circle(color: Color, animationProgress: Float) {
 }
 
 @Composable
-fun CustomBottomNavigation() {
+fun CustomBottomNavigation(onNavigationSelected: (String) -> Unit) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -174,8 +176,10 @@ fun CustomBottomNavigation() {
             )
             .padding(horizontal = 40.dp)
     ) {
-        listOf(Icons.Filled.CalendarToday, Icons.Filled.Group).map { image ->
-            IconButton(onClick = { }) {
+        listOf(Icons.Filled.ChatBubble, Icons.Filled.Person).mapIndexed { index, image ->
+            IconButton(onClick = { 
+                if (index == 0) onNavigationSelected("chat") else onNavigationSelected("profile")
+            }) {
                 Icon(imageVector = image, contentDescription = null, tint = Color.White)
             }
         }
@@ -186,7 +190,8 @@ fun CustomBottomNavigation() {
 fun FabGroup(
     animationProgress: Float = 0f,
     renderEffect: androidx.compose.ui.graphics.RenderEffect? = null,
-    toggleAnimation: () -> Unit = { }
+    toggleAnimation: () -> Unit = { },
+    onNavigationSelected: (String) -> Unit = {}
 ) {
     Box(
         Modifier
@@ -197,7 +202,7 @@ fun FabGroup(
     ) {
 
         AnimatedFab(
-            icon = Icons.Default.PhotoCamera,
+            icon = Icons.Default.AddCircle, // Create Room
             modifier = Modifier
                 .padding(
                     PaddingValues(
@@ -205,11 +210,12 @@ fun FabGroup(
                         end = 210.dp
                     ) * FastOutSlowInEasing.transform(0f, 0.8f, animationProgress)
                 ),
-            opacity = LinearEasing.transform(0.2f, 0.7f, animationProgress)
+            opacity = LinearEasing.transform(0.2f, 0.7f, animationProgress),
+            onClick = { onNavigationSelected("game_detail") }
         )
 
         AnimatedFab(
-            icon = Icons.Default.Settings,
+            icon = Icons.Default.Search, // Find Game
             modifier = Modifier.padding(
                 PaddingValues(
                     bottom = 88.dp,
@@ -219,7 +225,7 @@ fun FabGroup(
         )
 
         AnimatedFab(
-            icon = Icons.Default.ShoppingCart,
+            icon = Icons.Default.Login, // Join Room
             modifier = Modifier.padding(
                 PaddingValues(
                     bottom = 72.dp,
@@ -235,13 +241,16 @@ fun FabGroup(
         )
 
         AnimatedFab(
-            icon = Icons.Default.Add,
+            icon = Icons.Default.PlayArrow, // Main Games FAB
             modifier = Modifier
                 .rotate(
                     225 * FastOutSlowInEasing
                         .transform(0.35f, 0.65f, animationProgress)
                 ),
-            onClick = toggleAnimation,
+            onClick = {
+                toggleAnimation()
+                onNavigationSelected("games")
+            },
             backgroundColor = Color.Transparent
         )
     }
@@ -252,13 +261,19 @@ fun AnimatedFab(
     modifier: Modifier,
     icon: ImageVector? = null,
     opacity: Float = 1f,
-    backgroundColor: Color = MaterialTheme.colors.secondary,
+    backgroundColor: Color = MaterialTheme.colorScheme.secondary,
     onClick: () -> Unit = {}
 ) {
     FloatingActionButton(
         onClick = onClick,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-        backgroundColor = backgroundColor,
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            focusedElevation = 0.dp,
+            hoveredElevation = 0.dp
+        ),
+        containerColor = backgroundColor,
+        shape = CircleShape,
         modifier = modifier.scale(1.25f)
     ) {
         icon?.let {
@@ -273,7 +288,7 @@ fun AnimatedFab(
 
 
 @Composable
-@Preview(device = "id:pixel_4a", showBackground = true, backgroundColor = 0xFF3A2F6E)
+@Preview(device = "id:pixel_4a", showBackground = true, backgroundColor = 0xFF1E88E5)
 private fun FluidBottomNavigationPreview() {
     AnkYudhTheme {
         FluidBottomNavigation()
